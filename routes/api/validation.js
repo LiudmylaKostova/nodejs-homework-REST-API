@@ -28,9 +28,9 @@ const validate = async (schema, body, next) => {
   }
 };
 
-(module.exports.addValidContact = (req, _res, next) => {
+module.exports.addValidContact = (req, _res, next) => {
   return validate(schemaAddContact, req.body, next);
-}),
-  (module.exports.updateValidContact = (req, _res, next) => {
-    return validate(schemaUpdateContact, req.body, next);
-  });
+};
+module.exports.updateValidContact = (req, _res, next) => {
+  return validate(schemaUpdateContact, req.body, next);
+};
