@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
+const gravatar = require("gravatar");
 const bcrypt = require("bcryptjs");
 const { Subscription } = require("../../helpers/constants");
 
@@ -25,9 +26,15 @@ const userSchema = new Schema(
       type: String,
       default: null,
     },
-    // owner: {
-    //   type: SchemaTypes.ObjectId,
-    //   ref: "user",
+    avatar: {
+      type: String,
+      default: function () {
+        return gravatar.url(this.email, { s: 250 }, true);
+      },
+    },
+    // userIdImg: {
+    //   type: String,      // when use cloudify
+    //   default: null,
     // },
   },
   {
