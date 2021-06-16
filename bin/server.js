@@ -4,7 +4,7 @@ const createFolderIsNotExist = require("../helpers/create-dir");
 
 require("dotenv").config();
 
-const PORT = process.env.PORT || 3006;
+const PORT = process.env.PORT || 3000;
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR;
 const AVATARS_OF_USERS = process.env.AVATARS_OF_USERS;
@@ -19,17 +19,3 @@ db.then(() => {
   console.log(`Server not run. Error: ${err.message}`);
   process.exit(1);
 });
-
-// const app = require("../app");
-// const db = require("../model/db");
-
-// const PORT = process.env.PORT || 3006;
-
-// db.then(() => {
-//   app.listen(PORT, () => {
-//     console.log(`Server running. Use our API on port: ${PORT}`);
-//   });
-// }).catch((err) => {
-//   console.log(`Server not run. Error: ${err.message}`);
-//   process.exit(1);
-// });

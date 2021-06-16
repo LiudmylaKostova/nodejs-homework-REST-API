@@ -9,6 +9,12 @@ const UploadAvatar = require("../services/upload-avatars-local");
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 const AVATARS_OF_USERS = process.env.AVATARS_OF_USERS;
 
+const EmailService = require("../services/email");
+const {
+  // CreateSenderNodemailer,
+  CreateSenderSendgrid,
+} = require("../services/sender-email");
+
 // cloudinary.config({
 //   cloud_name: process.env.CLOUD_NAME,
 //   api_key: process.env.API_KEY,
@@ -28,7 +34,16 @@ const reg = async (req, res, next) => {
     }
 
     const newUser = await Users.create(req.body);
-    const { email, subscribtion, avatar } = newUser;
+    const { email, subscribtion, avatar, verifyToken, name } = newUser;
+    try {
+      const emailService = new EmailService(
+        process.env.NODE_ENV,
+        new CreateSenderSendgrid()
+      );
+      await emailService.sendVerifyPasswordEmail(verifyToken, email, name);
+    } catch (e) {
+      console.log(e.message);
+    }
 
     return res.status(HttpCode.CREATED).json({
       status: "success",
@@ -56,6 +71,14 @@ const login = async (req, res, next) => {
         status: "error",
         code: HttpCode.UNAUTHORIZED,
         message: "Invalid credentials",
+      });
+    }
+
+    if (!user.verify) {
+      return res.status(HttpCode.UNAUTHORIZED).json({
+        status: "error",
+        code: HttpCode.UNAUTHORIZED,
+        message: "Check email for verification",
       });
     }
 
@@ -177,6 +200,62 @@ const avatars = async (req, res, next) => {
   }
 };
 
+const verify = async (req, res, next) => {
+  try {
+    const user = await Users.getUserByVerifyToken(req.params.token);
+    if (user) {
+      await Users.updateVerifyToken(user.id, true, null);
+      return res.status(HttpCode.OK).json({
+        status: "success",
+        code: HttpCode.OK,
+        message: "Verification successful!",
+      });
+    }
+    return res.status(HttpCode.NOT_FOUND).json({
+      status: "error",
+      code: HttpCode.NOT_FOUND,
+      message: "User with verification token was not found",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const repeatSendEmailVerify = async (req, res, next) => {
+  const user = await Users.findByEmail(req.body.email);
+  if (user) {
+    const { name, email, verifyToken, verify } = user;
+    if (!verify) {
+      try {
+        const emailService = new EmailService(
+          process.env.NODE_ENV,
+          new CreateSenderSendgrid()
+          // new CreateSenderNodemailer()
+        );
+        await emailService.sendVerifyPasswordEmail(verifyToken, email, name);
+        return res.status(HttpCode.OK).json({
+          status: "success",
+          code: HttpCode.OK,
+          message: "Verification email resubmited!",
+        });
+      } catch (e) {
+        // console.log(e.message);
+        return next(e);
+      }
+    }
+    return res.status(HttpCode.CONFLICT).json({
+      status: "error",
+      code: HttpCode.CONFLICT,
+      message: "Email has already been verified",
+    });
+  }
+  return res.status(HttpCode.NOT_FOUND).json({
+    status: "error",
+    code: HttpCode.NOT_FOUND,
+    message: "User was not found",
+  });
+};
+
 module.exports = {
   reg,
   login,
@@ -184,4 +263,6 @@ module.exports = {
   getCurrentUser,
   patch,
   avatars,
+  verify,
+  repeatSendEmailVerify,
 };
